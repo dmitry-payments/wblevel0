@@ -1,0 +1,33 @@
+services:
+  db:
+    image: postgres:16.2-alpine3.19
+    environment:
+      POSTGRES_PASSWORD: example
+      POSTGRES_DB: level0
+      POSTGRES_USER: level0
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready", "-d", "db_prod" ]
+      interval: 30s
+      timeout: 60s
+      retries: 5
+      start_period: 10s
+  migrations:
+    build:
+      dockerfile: ./build/migrations.dockerfile
+      context: .
+    environment:
+      DBHOST: db
+      DBUSER: level0
+      DBPASSWORD: example
+      DBNAME: level0
+    depends_on:
+      db:
+        condition: service_healthy
+  nats:
+    image: nats-streaming:0.25.6-alpine3.18
+    ports:
+      - "4223:4223"
+      - "8223:8223"
+    command: "nats-streaming-server -p 4223 -m 8223"
